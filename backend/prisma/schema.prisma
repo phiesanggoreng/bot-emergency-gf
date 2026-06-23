@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id               String            @id @default(uuid())
+  name             String
+  email            String            @unique
+  password_hash    String
+  telegram_chat_id String?
+  created_at       DateTime          @default(now())
+  updated_at       DateTime          @updatedAt
+  TelegramGroups   TelegramGroup[]
+  TrustedContacts  TrustedContact[]
+  Checkins         Checkin[]
+  NotificationLogs NotificationLog[]
+
+  @@map("users")
+}
+
+model TelegramGroup {
+  id            String   @id @default(uuid())
+  user_id       String
+  group_name    String
+  group_chat_id String
+  is_active     Boolean  @default(true)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  user          User     @relation(fields: [user_id], references: [id])
+
+  @@map("telegram_groups")
+}
+
+model TrustedContact {
+  id                   String   @id @default(uuid())
+  user_id              String
+  name                 String
+  relationship         String?
+  telegram_chat_id     String?
+  phone_number         String?
+  is_primary           Boolean  @default(false)
+  is_emergency_contact Boolean  @default(false)
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+  user                 User     @relation(fields: [user_id], references: [id])
+
+  @@map("trusted_contacts")
+}
+
+
+
+model Checkin {
+  id         String        @id @default(uuid())
+  user_id    String
+  status     String
+  message    String?
+  source     String        @default("WEB") // e.g., WEB, TELEGRAM
+  created_at DateTime      @default(now())
+  user       User          @relation(fields: [user_id], references: [id])
+
+  @@map("checkins")
+}
+
+model NotificationLog {
+  id             String   @id @default(uuid())
+  user_id        String
+  target_type    String   // e.g., GROUP, PERSONAL
+  target_chat_id String
+  type           String   // e.g., CHECKIN, EMERGENCY, REMINDER
+  message        String
+  status         String   // e.g., SUCCESS, FAILED
+  sent_at        DateTime @default(now())
+  user           User     @relation(fields: [user_id], references: [id])
+
+  @@map("notification_logs")
+}
