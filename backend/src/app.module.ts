@@ -10,6 +10,8 @@ import { CheckinController } from './checkin/checkin.controller';
 import { CheckinService } from './checkin/checkin.service';
 import { ContactsController } from './contacts/contacts.controller';
 import { ContactsService } from './contacts/contacts.service';
+import { TemplatesController } from './templates/templates.controller';
+import { TemplatesService } from './templates/templates.service';
 
 @Module({
   imports: [
@@ -24,10 +26,15 @@ import { ContactsService } from './contacts/contacts.service';
       }),
       inject: [ConfigService],
     }),
-    PrismaModule, 
-    BotModule
+    PrismaModule,
+    BotModule,
   ],
-  controllers: [AppController, CheckinController, ContactsController],
-  providers: [AppService, CheckinService, ContactsService],
+  controllers: [
+    AppController,
+    CheckinController,
+    ContactsController,
+    TemplatesController,
+  ],
+  providers: [AppService, CheckinService, ContactsService, TemplatesService],
 })
 export class AppModule {}

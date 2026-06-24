@@ -1,36 +1,57 @@
-import { Controller, Get, Post, Body, HttpException, HttpStatus, Query } from '@nestjs/common';
-import { CheckinService, CheckinStatus } from './checkin.service';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  HttpException,
+  HttpStatus,
+  UseGuards,
+} from '@nestjs/common';
+import { CheckinService } from './checkin.service';
+import type { CheckinStatus } from './checkin.service';
+import { NextAuthGuard, AuthUser } from '../auth';
 
 class CheckinDto {
   chatId: string;
   status: CheckinStatus;
-  userName: string;
-  email?: string;
 }
 
 @Controller('checkin')
+@UseGuards(NextAuthGuard)
 export class CheckinController {
   constructor(private readonly checkinService: CheckinService) {}
 
   @Get('history')
-  getHistory(@Query('email') email: string) {
-    if (!email) return [];
-    return this.checkinService.getHistory(email);
+  getHistory(@AuthUser() user: { email: string }) {
+    return this.checkinService.getHistory(user.email);
+  }
+
+  @Get('notifications')
+  getNotificationLogs(@AuthUser() user: { email: string }) {
+    return this.checkinService.getNotificationLogs(user.email);
   }
 
   @Post()
-  async checkin(@Body() body: CheckinDto) {
-    const { chatId, status, userName, email } = body;
+  async checkin(
+    @Body() body: CheckinDto,
+    @AuthUser() user: { email: string; name: string },
+  ) {
+    const { chatId, status } = body;
 
-    if (!chatId || !status || !userName) {
+    if (!chatId || !status) {
       throw new HttpException(
-        'chatId, status, dan userName wajib diisi.',
+        'chatId dan status wajib diisi.',
         HttpStatus.BAD_REQUEST,
       );
     }
 
-    const validStatuses: CheckinStatus[] = ['SAFE', 'SICK_BUT_SAFE', 'RESTING', 'EMERGENCY'];
-    if (!validStatuses.includes(status as CheckinStatus)) {
+    const validStatuses: CheckinStatus[] = [
+      'SAFE',
+      'SICK_BUT_SAFE',
+      'RESTING',
+      'EMERGENCY',
+    ];
+    if (!validStatuses.includes(status)) {
       throw new HttpException(
         `Status tidak valid. Gunakan: ${validStatuses.join(', ')}`,
         HttpStatus.BAD_REQUEST,
@@ -38,14 +59,19 @@ export class CheckinController {
     }
 
     try {
-      const result = await this.checkinService.sendCheckin(chatId, status as CheckinStatus, userName, email);
+      // Use authenticated user's name & email — no spoofing possible
+      const result = await this.checkinService.sendCheckin(
+        chatId,
+        status,
+        user.name,
+        user.email,
+      );
       return result;
     } catch (error) {
       throw new HttpException(
-        `Gagal mengirim pesan: ${error.message}`,
+        `Gagal mengirim pesan: ${error instanceof Error ? error.message : 'Unknown error'}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
 }
-

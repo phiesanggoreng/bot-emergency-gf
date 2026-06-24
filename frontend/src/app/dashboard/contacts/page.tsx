@@ -1,28 +1,21 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { Users, Plus, Trash2, HelpCircle, Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3003";
+import { Users, Plus, Trash2, Loader2 } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { apiFetch } from "@/lib/api";
 
 export default function ContactsPage() {
   const { data: session } = useSession();
-  const [contacts, setContacts] = useState<any[]>([]);
+  const [contacts, setContacts] = useState<{ id: string; group_name: string; group_chat_id: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [groupName, setGroupName] = useState("");
   const [groupChatId, setGroupChatId] = useState("");
   const [adding, setAdding] = useState(false);
 
-  useEffect(() => {
-    if (session?.user?.email) {
-      fetchContacts();
-    }
-  }, [session]);
-
-  const fetchContacts = async () => {
+  const fetchContacts = useCallback(async () => {
     try {
-      const res = await fetch(`${BACKEND_URL}/contacts?email=${session?.user?.email}`);
+      const res = await apiFetch("/contacts");
       const data = await res.json();
       setContacts(data);
     } catch (err) {
@@ -30,18 +23,22 @@ export default function ContactsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (session?.user?.email) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchContacts();
+    }
+  }, [session, fetchContacts]);
 
   const handleAdd = async () => {
     if (!groupName || !groupChatId) return;
     setAdding(true);
     try {
-      await fetch(`${BACKEND_URL}/contacts`, {
+      await apiFetch("/contacts", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: session?.user?.email,
-          name: session?.user?.name,
           groupName,
           groupChatId,
         }),
@@ -50,6 +47,7 @@ export default function ContactsPage() {
       setGroupChatId("");
       fetchContacts();
     } catch (err) {
+      console.error(err);
       alert("Gagal menambahkan kontak");
     } finally {
       setAdding(false);
@@ -59,7 +57,7 @@ export default function ContactsPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Hapus kontak ini?")) return;
     try {
-      await fetch(`${BACKEND_URL}/contacts/${id}`, { method: "DELETE" });
+      await apiFetch(`/contacts/${id}`, { method: "DELETE" });
       fetchContacts();
     } catch (err) {
       console.error(err);

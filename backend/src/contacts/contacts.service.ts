@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -22,16 +26,21 @@ export class ContactsService {
   async getContacts(email: string) {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) return [];
-    
+
     return this.prisma.telegramGroup.findMany({
       where: { user_id: user.id },
       orderBy: { created_at: 'desc' },
     });
   }
 
-  async addContact(email: string, name: string, groupName: string, groupChatId: string) {
+  async addContact(
+    email: string,
+    name: string,
+    groupName: string,
+    groupChatId: string,
+  ) {
     const user = await this.getOrCreateUser(email, name);
-    
+
     return this.prisma.telegramGroup.create({
       data: {
         user_id: user.id,
@@ -41,7 +50,23 @@ export class ContactsService {
     });
   }
 
-  async deleteContact(id: string) {
+  async deleteContact(id: string, email: string) {
+    // Verify ownership: only the owner can delete their contacts
+    const contact = await this.prisma.telegramGroup.findUnique({
+      where: { id },
+      include: { user: true },
+    });
+
+    if (!contact) {
+      throw new NotFoundException('Kontak tidak ditemukan.');
+    }
+
+    if (contact.user.email !== email) {
+      throw new ForbiddenException(
+        'Kamu tidak memiliki akses untuk menghapus kontak ini.',
+      );
+    }
+
     return this.prisma.telegramGroup.delete({
       where: { id },
     });

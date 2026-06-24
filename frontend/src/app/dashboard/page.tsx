@@ -4,9 +4,8 @@ import { useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { ShieldCheck, HeartPulse, Bed, AlertTriangle, Info, Loader2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { apiFetch } from "@/lib/api";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3003";
 
 type CheckinStatus = "SAFE" | "SICK_BUT_SAFE" | "RESTING" | "EMERGENCY";
 
@@ -14,12 +13,13 @@ export default function Dashboard() {
   const { data: session } = useSession();
   const [loading, setLoading] = useState<CheckinStatus | null>(null);
   const [success, setSuccess] = useState<CheckinStatus | null>(null);
-  const [contacts, setContacts] = useState<any[]>([]);
+  const [deliveryInfo, setDeliveryInfo] = useState<{ delivered: number; failed: number } | null>(null);
+  const [contacts, setContacts] = useState<{ id: string; group_name: string; group_chat_id: string }[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<string>("ALL");
 
   useEffect(() => {
     if (session?.user?.email) {
-      fetch(`${BACKEND_URL}/contacts?email=${session.user.email}`)
+      apiFetch("/contacts")
         .then(res => res.json())
         .then(data => {
           setContacts(data);
@@ -45,14 +45,11 @@ export default function Dashboard() {
     setSuccess(null);
 
     try {
-      const res = await fetch(`${BACKEND_URL}/checkin`, {
+      const res = await apiFetch("/checkin", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chatId: selectedChatId,
           status,
-          userName: session.user?.name || "User",
-          email: session.user?.email || "",
         }),
       });
 
@@ -61,10 +58,13 @@ export default function Dashboard() {
         throw new Error(errData.message || "Gagal mengirim");
       }
 
+      const result = await res.json();
+      setDeliveryInfo({ delivered: result.delivered || 0, failed: result.failed || 0 });
       setSuccess(status);
-      setTimeout(() => setSuccess(null), 3000);
-    } catch (err: any) {
-      alert(err.message || "Gagal mengirim pesan ke Telegram.");
+      setTimeout(() => { setSuccess(null); setDeliveryInfo(null); }, 4000);
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      alert(error.message || "Gagal mengirim pesan ke Telegram.");
     } finally {
       setLoading(null);
     }
@@ -88,10 +88,20 @@ export default function Dashboard() {
         <motion.div 
           initial={{ opacity: 0, y: -10 }} 
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-3"
+          className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between gap-3"
         >
-          <Check className="w-5 h-5 text-emerald-400" />
-          <p className="text-emerald-400 text-sm font-medium">Pesan berhasil dikirim ke Telegram! ✨</p>
+          <div className="flex items-center gap-3">
+            <Check className="w-5 h-5 text-emerald-400" />
+            <p className="text-emerald-400 text-sm font-medium">Pesan berhasil dikirim ke Telegram! ✨</p>
+          </div>
+          {deliveryInfo && (
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-emerald-400">{deliveryInfo.delivered} terkirim</span>
+              {deliveryInfo.failed > 0 && (
+                <span className="text-red-400">{deliveryInfo.failed} gagal</span>
+              )}
+            </div>
+          )}
         </motion.div>
       )}
 
@@ -112,7 +122,7 @@ export default function Dashboard() {
           className="bg-background border border-primary/20 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary w-full md:w-auto min-w-[200px]"
         >
           <option value="ALL">Kirim ke Semua ({contacts.length} Kontak)</option>
-          {contacts.map((c: any) => (
+          {contacts.map((c) => (
             <option key={c.id} value={c.group_chat_id}>{c.group_name}</option>
           ))}
         </select>

@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Search, 
+import {
   LayoutDashboard, 
   Users, 
   Settings, 
@@ -10,10 +9,9 @@ import {
   ChevronDown,
   ChevronRight,
   Activity,
+  Bell,
   PanelLeftClose,
-  PanelLeftOpen,
-  Command,
-  X
+  PanelLeftOpen
 } from 'lucide-react';
 import { signOut, useSession } from "next-auth/react";
 import { useRouter, usePathname } from 'next/navigation';
@@ -38,6 +36,7 @@ const navGroups: NavGroupData[] = [
     items: [
       { id: 'home', title: 'Check-in', icon: LayoutDashboard, path: '/dashboard' },
       { id: 'history', title: 'Riwayat', icon: Activity, path: '/dashboard/history' },
+      { id: 'notifications', title: 'Log Notifikasi', icon: Bell, path: '/dashboard/notifications' },
     ]
   },
   {
@@ -305,7 +304,10 @@ export function DashboardSidebarLayout({ children }: { children: React.ReactNode
              
              <div className="flex items-center gap-3">
                {session.user?.image ? (
-                 <img src={session.user.image} alt="Profile" className="w-8 h-8 rounded-full border border-primary/20" />
+                 <>
+                   {/* eslint-disable-next-line @next/next/no-img-element */}
+                   <img src={session.user.image} alt="Profile" className="w-8 h-8 rounded-full border border-primary/20" />
+                 </>
                ) : (
                  <div className="w-8 h-8 bg-primary/10 rounded-full border border-primary/20 flex items-center justify-center text-xs font-bold text-primary">
                     {session.user?.name?.charAt(0)}

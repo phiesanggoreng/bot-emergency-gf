@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowRight, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /* -----------------------------------------------------------------------------
@@ -106,7 +105,7 @@ function PixelCanvas({ colors, gap = 5, speed = 30 }: PixelCanvasProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const pixelsRef = useRef<Pixel[]>([]);
   const animationRef = useRef<number>(0);
-  const lastFrameRef = useRef(performance.now());
+  const lastFrameRef = useRef(0);
   const reducedMotionRef = useRef(false);
 
   const init = useCallback(() => {
@@ -142,6 +141,7 @@ function PixelCanvas({ colors, gap = 5, speed = 30 }: PixelCanvasProps) {
   }, [colors, gap, speed]);
 
   const animate = useCallback((mode: "appear" | "disappear") => {
+    lastFrameRef.current = performance.now();
     cancelAnimationFrame(animationRef.current);
     const frameInterval = 1000 / 60;
 
@@ -256,7 +256,9 @@ export function PixelHero({
     const primary = getComputedStyle(div).color;
     document.body.removeChild(div);
     
-    setThemeColors([muted, muted, muted, muted, primary]);
+    setTimeout(() => {
+      setThemeColors([muted, muted, muted, muted, primary]);
+    }, 0);
 
     const loadTimer = setTimeout(() => setIsLoaded(true), 50);
     return () => clearTimeout(loadTimer);

@@ -2,9 +2,8 @@
 
 import { useSession } from "next-auth/react";
 import { Clock, ShieldCheck, HeartPulse, Bed, AlertTriangle, Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3003";
+import { useState, useEffect, useCallback } from "react";
+import { apiFetch } from "@/lib/api";
 
 const STATUS_ICONS: Record<string, React.ReactNode> = {
   SAFE: <ShieldCheck className="w-4 h-4 text-emerald-400" />,
@@ -22,18 +21,12 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function HistoryPage() {
   const { data: session } = useSession();
-  const [history, setHistory] = useState<any[]>([]);
+  const [history, setHistory] = useState<{ id: string; status: string; message: string; created_at: string; source: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (session?.user?.email) {
-      fetchHistory();
-    }
-  }, [session]);
-
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
     try {
-      const res = await fetch(`${BACKEND_URL}/checkin/history?email=${session?.user?.email}`);
+      const res = await apiFetch("/checkin/history");
       const data = await res.json();
       setHistory(data);
     } catch (err) {
@@ -41,7 +34,14 @@ export default function HistoryPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (session?.user?.email) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchHistory();
+    }
+  }, [session, fetchHistory]);
 
   if (!session) return null;
 

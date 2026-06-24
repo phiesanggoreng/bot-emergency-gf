@@ -74,11 +74,14 @@ export const InteractiveNotificationCard = React.forwardRef<
           >
             {/* Background Image (if any) or fallback gradient */}
             {imageUrl ? (
-              <img
-                src={imageUrl}
-                alt={`${title}, ${subtitle}`}
-                className="absolute inset-0 h-full w-full rounded-xl object-cover opacity-80"
-              />
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={imageUrl}
+                  alt={`${title}, ${subtitle}`}
+                  className="absolute inset-0 h-full w-full rounded-xl object-cover opacity-80"
+                />
+              </>
             ) : (
               <div className="absolute inset-0 h-full w-full rounded-xl bg-gradient-to-br from-primary/20 to-cyan-500/10" />
             )}

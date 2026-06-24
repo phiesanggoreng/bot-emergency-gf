@@ -16,10 +16,11 @@ model User {
   telegram_chat_id String?
   created_at       DateTime          @default(now())
   updated_at       DateTime          @updatedAt
-  TelegramGroups   TelegramGroup[]
-  TrustedContacts  TrustedContact[]
-  Checkins         Checkin[]
-  NotificationLogs NotificationLog[]
+  TelegramGroups    TelegramGroup[]
+  TrustedContacts   TrustedContact[]
+  Checkins          Checkin[]
+  NotificationLogs  NotificationLog[]
+  MessageTemplates  MessageTemplate[]
 
   @@map("users")
 }
@@ -79,4 +80,19 @@ model NotificationLog {
   user           User     @relation(fields: [user_id], references: [id])
 
   @@map("notification_logs")
+}
+
+model MessageTemplate {
+  id         String   @id @default(uuid())
+  user_id    String
+  status     String   // SAFE, SICK_BUT_SAFE, RESTING, EMERGENCY
+  emoji      String
+  label      String
+  message    String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  user       User     @relation(fields: [user_id], references: [id])
+
+  @@unique([user_id, status])
+  @@map("message_templates")
 }

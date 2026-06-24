@@ -12,7 +12,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     } catch (error) {
       this.logger.warn(
         'Database connection failed — running without DB. ' +
-        'Set DATABASE_URL in .env to enable database features.',
+          'Set DATABASE_URL in .env to enable database features.',
+        error,
       );
     }
   }
