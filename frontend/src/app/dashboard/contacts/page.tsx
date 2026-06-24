@@ -16,8 +16,13 @@ export default function ContactsPage() {
   const fetchContacts = useCallback(async () => {
     try {
       const res = await apiFetch("/contacts");
+      if (!res.ok) throw new Error("Gagal mengambil kontak");
       const data = await res.json();
-      setContacts(data);
+      if (Array.isArray(data)) {
+        setContacts(data);
+      } else {
+        console.error("Invalid response for contacts:", data);
+      }
     } catch (err) {
       console.error(err);
     } finally {

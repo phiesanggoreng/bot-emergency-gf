@@ -22,9 +22,13 @@ export default function Dashboard() {
       apiFetch("/contacts")
         .then(res => res.json())
         .then(data => {
-          setContacts(data);
-          if (data.length > 0) {
-            setSelectedChatId("ALL");
+          if (Array.isArray(data)) {
+            setContacts(data);
+            if (data.length > 0) {
+              setSelectedChatId("ALL");
+            }
+          } else {
+            console.error("Invalid response for contacts:", data);
           }
         })
         .catch(console.error);

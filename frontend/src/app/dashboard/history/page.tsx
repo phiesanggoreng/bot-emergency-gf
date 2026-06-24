@@ -27,8 +27,13 @@ export default function HistoryPage() {
   const fetchHistory = useCallback(async () => {
     try {
       const res = await apiFetch("/checkin/history");
+      if (!res.ok) throw new Error("Gagal mengambil history");
       const data = await res.json();
-      setHistory(data);
+      if (Array.isArray(data)) {
+        setHistory(data);
+      } else {
+        console.error("Invalid response for history:", data);
+      }
     } catch (err) {
       console.error(err);
     } finally {
